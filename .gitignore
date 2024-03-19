@@ -257,3 +257,5 @@ docs/dev
 
 # Config files
 *.conf
+
+.cache
