@@ -18,6 +18,7 @@
 #include <unordered_map>
 
 #include "buffer/clock_replacer.h"
+#include "common/config.h"
 #include "recovery/log_manager.h"
 #include "storage/disk/disk_manager.h"
 #include "storage/page/page.h"
@@ -169,5 +170,7 @@ class BufferPoolManager {
   std::list<frame_id_t> free_list_;
   /** This latch protects shared data structures. We recommend updating this comment to describe what it protects. */
   std::shared_mutex latch_;
+
+  auto GetVictimFrameId() ->frame_id_t;
 };
 }  // namespace bustub
