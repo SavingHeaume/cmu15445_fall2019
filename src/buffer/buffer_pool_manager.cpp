@@ -50,7 +50,7 @@ Page *BufferPoolManager::FetchPageImpl(page_id_t page_id) {
   if (it_page != page_table_.end()) {
     page = &pages_[it_page->second];
     if (page->pin_count_++ == 0) {
-      replacer_->Pin(page_id);
+      replacer_->Pin(it_page->second);
     }
     return page;
   }
@@ -78,7 +78,7 @@ Page *BufferPoolManager::FetchPageImpl(page_id_t page_id) {
   page->pin_count_ = 1;
   page->is_dirty_ = false;
 
-  return nullptr;
+  return page;
 }
 
 auto BufferPoolManager::GetVictimFrameId() -> frame_id_t {
@@ -109,7 +109,7 @@ bool BufferPoolManager::UnpinPageImpl(page_id_t page_id, bool is_dirty) {
 
   page->is_dirty_ |= is_dirty;
   if (--page->pin_count_ == 0) {
-    replacer_->Pin(it_page->second);
+    replacer_->Unpin(it_page->second);
   }
   return true;
 }
@@ -155,12 +155,12 @@ Page *BufferPoolManager::NewPageImpl(page_id_t *page_id) {
   }
 
   *page_id = disk_manager_->AllocatePage();
-  page_table_.erase(page->page_id_);
+  page_table_.erase(page->GetPageId());
   page_table_[*page_id] = frame_id;
   
   page->page_id_ = *page_id;
   page->pin_count_ = 1;
-  page->is_dirty_ = true;
+  page->is_dirty_ = false;
   
   // 4.   Set the page ID output parameter. Return a pointer to P.
   return page;
@@ -177,7 +177,7 @@ bool BufferPoolManager::DeletePageImpl(page_id_t page_id) {
   }
   // 2.   If P exists, but has a non-zero pin-count, return false. Someone is using the page.
   Page *page = &pages_[it_page->second];
-  if (page->pin_count_ != 0) {
+  if (page->pin_count_ > 0) {
     return false;
   }
   // 3.   Otherwise, P can be deleted. Remove P from the page table, reset its metadata and return it to the free list.
@@ -187,7 +187,7 @@ bool BufferPoolManager::DeletePageImpl(page_id_t page_id) {
   page->pin_count_ = 0;
   page->is_dirty_ = false;
   free_list_.emplace_back(it_page->second);
-  return false;
+  return true;
 }
 
 void BufferPoolManager::FlushAllPagesImpl() {
