@@ -1,6 +1,8 @@
 #pragma once
 
+#include <algorithm>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -54,14 +56,31 @@ class SimpleCatalog {
    */
   TableMetadata *CreateTable(Transaction *txn, const std::string &table_name, const Schema &schema) {
     BUSTUB_ASSERT(names_.count(table_name) == 0, "Table names should be unique!");
-    return nullptr;
+    table_oid_t table_oid = next_table_oid_++;
+    auto table = std::make_unique<TableHeap>(bpm_, lock_manager_, log_manager_, txn);
+    tables_[table_oid] = std::make_unique<TableMetadata>(schema, table_name, std::move(table), table_oid);
+    names_.insert({table_name, table_oid});
+
+    return tables_[table_oid].get();
   }
 
   /** @return table metadata by name */
-  TableMetadata *GetTable(const std::string &table_name) { return nullptr; }
+  TableMetadata *GetTable(const std::string &table_name) {
+    auto it_name_ = names_.find(table_name);
+    if (it_name_ == names_.end()) {
+      throw std::out_of_range("");
+    }
+    return GetTable(it_name_->second);
+  }
 
   /** @return table metadata by oid */
-  TableMetadata *GetTable(table_oid_t table_oid) { return nullptr; }
+  TableMetadata *GetTable(table_oid_t table_oid) {
+    auto it_table = tables_.find(table_oid);
+    if (it_table == tables_.end()) {
+      throw std::out_of_range("out of table_ range");
+    }
+    return it_table->second.get();
+  }
 
  private:
   [[maybe_unused]] BufferPoolManager *bpm_;
