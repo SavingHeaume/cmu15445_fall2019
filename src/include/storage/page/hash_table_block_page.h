@@ -92,6 +92,9 @@ class HashTableBlockPage {
    * @return true if the index is readable, false otherwise
    */
   bool IsReadable(slot_offset_t bucket_ind) const;
+  
+  bool GetBit(const std::atomic_char *array, slot_offset_t bucket_ind) const;
+  void SetBit(std::atomic_char *array, slot_offset_t bucket_ind, bool value);
 
  private:
   std::atomic_char occupied_[(BLOCK_ARRAY_SIZE - 1) / 8 + 1];
@@ -99,6 +102,7 @@ class HashTableBlockPage {
   // 0 if tombstone/brand new (never occupied), 1 otherwise.
   std::atomic_char readable_[(BLOCK_ARRAY_SIZE - 1) / 8 + 1];
   MappingType array_[0];
+
 };
 
 }  // namespace bustub

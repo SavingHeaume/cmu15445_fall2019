@@ -12,11 +12,13 @@
 
 #pragma once
 
+#include <cstddef>
 #include <queue>
 #include <string>
 #include <vector>
 
 #include "buffer/buffer_pool_manager.h"
+#include "common/config.h"
 #include "concurrency/transaction.h"
 #include "container/hash/hash_function.h"
 #include "container/hash/hash_table.h"
@@ -97,6 +99,30 @@ class LinearProbeHashTable : public HashTable<KeyType, ValueType, KeyComparator>
 
   // Hash function
   HashFunction<KeyType> hash_fn_;
+
+  // difin_by_me
+  std::vector<page_id_t> page_ids_;
+  size_t num_buckets_;
+  size_t num_pages_;
+  size_t last_block_array_size_;
+
+  enum class LockType { READ = 0, WRITE = 1 };
+
+  void InitHeaderPage(HashTableHeaderPage *header_page);
+  auto GetIndex(const KeyType &keytype) -> std::tuple<size_t, size_t, size_t>;
+  void StepForward(slot_offset_t &bucket_index, size_t &block_index, Page *&raw_block_page,
+                   HASH_TABLE_BLOCK_TYPE *&block_page, LockType lockType);
+
+  inline size_t GetBlockArraySize(size_t block_index) {
+    return block_index < num_pages_ - 1 ? BLOCK_ARRAY_SIZE : last_block_array_size_;
+  }
+
+  inline bool IsMash(HASH_TABLE_BLOCK_TYPE *block_page, slot_offset_t bucket_index, const KeyType &key,
+                     const ValueType &value) {
+    return !comparator_(key, block_page->KeyAt(bucket_index)) && value == block_page->ValueAt(bucket_index);
+  }
+
+  bool InsertImpl(Transaction *transaction, const KeyType &key, const ValueType &value);
 };
 
 }  // namespace bustub
