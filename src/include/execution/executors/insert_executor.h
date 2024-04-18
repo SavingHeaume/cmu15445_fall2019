@@ -15,7 +15,10 @@
 #include <memory>
 #include <utility>
 
+#include "catalog/simple_catalog.h"
+#include "common/rid.h"
 #include "execution/executor_context.h"
+#include "execution/executor_factory.h"
 #include "execution/executors/abstract_executor.h"
 #include "execution/plans/insert_plan.h"
 #include "storage/table/tuple.h"
@@ -35,18 +38,46 @@ class InsertExecutor : public AbstractExecutor {
    */
   InsertExecutor(ExecutorContext *exec_ctx, const InsertPlanNode *plan,
                  std::unique_ptr<AbstractExecutor> &&child_executor)
-      : AbstractExecutor(exec_ctx) {}
+      : AbstractExecutor(exec_ctx),
+        child_executor_(std::move(child_executor)),
+        table_metadata_(exec_ctx->GetCatalog()->GetTable(plan->TableOid())) {}
 
   const Schema *GetOutputSchema() override { return plan_->OutputSchema(); }
 
-  void Init() override {}
+  void Init() override {
+    if (!plan_->IsRawInsert()) {
+      child_executor_->Init();
+    }
+  }
 
   // Note that Insert does not make use of the tuple pointer being passed in.
   // We return false if the insert failed for any reason, and return true if all inserts succeeded.
-  bool Next([[maybe_unused]] Tuple *tuple) override { return false; }
+  bool Next([[maybe_unused]] Tuple *tuple) override {
+    RID rid;
+
+    if (plan_->IsRawInsert()) {
+      for (const auto &value : plan_->RawValues()) {
+        Tuple tuple(value, &table_metadata_->schema_);
+        if (!table_metadata_->table_->InsertTuple(tuple, &rid, exec_ctx_->GetTransaction())) {
+          return false;
+        }
+      }
+    } else {
+      Tuple tuple;
+      while (child_executor_->Next(&tuple)) {
+        if (!table_metadata_->table_->InsertTuple(tuple, &rid, exec_ctx_->GetTransaction())) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
 
  private:
   /** The insert plan node to be executed. */
   const InsertPlanNode *plan_;
+
+  std::unique_ptr<AbstractExecutor> child_executor_;
+  TableMetadata *table_metadata_;
 };
 }  // namespace bustub

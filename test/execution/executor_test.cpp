@@ -122,7 +122,7 @@ class ExecutorTest : public ::testing::Test {
 };
 
 // NOLINTNEXTLINE
-TEST_F(ExecutorTest, DISABLED_SimpleSeqScanTest) {
+TEST_F(ExecutorTest, SimpleSeqScanTest) {
   // SELECT colA, colB FROM test_1 WHERE colA < 500
   TableMetadata *table_info = GetExecutorContext()->GetCatalog()->GetTable("test_1");
   Schema &schema = table_info->schema_;
@@ -254,7 +254,7 @@ TEST_F(ExecutorTest, DISABLED_SimpleSelectInsertTest) {
 }
 
 // NOLINTNEXTLINE
-TEST_F(ExecutorTest, DISABLED_SimpleHashJoinTest) {
+TEST_F(ExecutorTest, SimpleHashJoinTest) {
   // INSERT INTO empty_table2 SELECT colA, colB FROM test_1 WHERE colA < 500
   std::unique_ptr<AbstractPlanNode> scan_plan1;
   const Schema *out_schema1;
@@ -311,7 +311,7 @@ TEST_F(ExecutorTest, DISABLED_SimpleHashJoinTest) {
 }
 
 // NOLINTNEXTLINE
-TEST_F(ExecutorTest, DISABLED_SimpleAggregationTest) {
+TEST_F(ExecutorTest, SimpleAggregationTest) {
   // SELECT COUNT(colA), SUM(colA), min(colA), max(colA) from test_1;
   std::unique_ptr<AbstractPlanNode> scan_plan;
   const Schema *scan_schema;
@@ -364,7 +364,7 @@ TEST_F(ExecutorTest, DISABLED_SimpleAggregationTest) {
 }
 
 // NOLINTNEXTLINE
-TEST_F(ExecutorTest, DISABLED_SimpleGroupByAggregation) {
+TEST_F(ExecutorTest, SimpleGroupByAggregation) {
   // SELECT count(colA), colB, sum(C) FROM test_1 Group By colB HAVING count(colA) > 100
   std::unique_ptr<AbstractPlanNode> scan_plan;
   const Schema *scan_schema;

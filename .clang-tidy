@@ -27,6 +27,7 @@ Checks:     '
             portability-*,
             readability-*,
             -bugprone-too-small-loop-variable,
+            -bugprone-implicit-widening-of-multiplication-result,
             -clang-analyzer-cplusplus.NewDelete,
             -clang-analyzer-cplusplus.NewDeleteLeaks,
             -modernize-use-nodiscard,
@@ -35,6 +36,9 @@ Checks:     '
             -readability-magic-numbers,
             -readability-make-member-function-const
             -readability-convert-member-functions-to-static
+            -readability-identifier-length
+            -bugprone-easily-swappable-parameters
+            -bugprone-branch-clone
             '
 # TODO(WAN): To be enabled in Fall 2020.
 # CheckOptions:
