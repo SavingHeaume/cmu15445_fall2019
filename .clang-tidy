@@ -39,6 +39,7 @@ Checks:     '
             -readability-identifier-length
             -bugprone-easily-swappable-parameters
             -bugprone-branch-clone
+            -bugprone-undefined-memory-manipulation
             '
 # TODO(WAN): To be enabled in Fall 2020.
 # CheckOptions:
