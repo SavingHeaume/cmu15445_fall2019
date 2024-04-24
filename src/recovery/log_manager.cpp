@@ -78,7 +78,7 @@ void LogManager::Flush() {
   need_flush_ = true;
 
   cv_.notify_one();
-  cv_append_.wait(lock, [&] { return need_flush_.load(); });
+  cv_append_.wait(lock, [&] { return !need_flush_.load(); });
 }
 
 /*

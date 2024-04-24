@@ -15,6 +15,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include "recovery/log_record.h"
 #include "storage/table/table_heap.h"
 
 namespace bustub {
@@ -31,6 +32,9 @@ Transaction *TransactionManager::Begin(Transaction *txn) {
 
   if (enable_logging) {
     // TODO(student): Add logging here.
+    LogRecord log_record(txn->GetTransactionId(), txn->GetPrevLSN(), LogRecordType::BEGIN);
+    auto lsn = log_manager_->AppendLogRecord(&log_record);
+    txn->SetPrevLSN(lsn);
   }
 
   txn_map[txn->GetTransactionId()] = txn;
@@ -44,7 +48,7 @@ void TransactionManager::Commit(Transaction *txn) {
   auto write_set = txn->GetWriteSet();
   while (!write_set->empty()) {
     auto &item = write_set->back();
-    auto table = item.table_;
+    auto *table = item.table_;
     if (item.wtype_ == WType::DELETE) {
       // Note that this also releases the lock when holding the page latch.
       table->ApplyDelete(item.rid_, txn);
@@ -55,6 +59,9 @@ void TransactionManager::Commit(Transaction *txn) {
 
   if (enable_logging) {
     // TODO(student): add logging here
+    LogRecord log_record(txn->GetTransactionId(), txn->GetPrevLSN(), LogRecordType::COMMIT);
+    auto lsn = log_manager_->AppendLogRecord(&log_record);
+    txn->SetPrevLSN(lsn);
   }
 
   // Release all the locks.
@@ -70,7 +77,7 @@ void TransactionManager::Abort(Transaction *txn) {
   auto write_set = txn->GetWriteSet();
   while (!write_set->empty()) {
     auto &item = write_set->back();
-    auto table = item.table_;
+    auto *table = item.table_;
     if (item.wtype_ == WType::DELETE) {
       table->RollbackDelete(item.rid_, txn);
     } else if (item.wtype_ == WType::INSERT) {
@@ -85,6 +92,9 @@ void TransactionManager::Abort(Transaction *txn) {
 
   if (enable_logging) {
     // TODO(student): add logging here
+    LogRecord log_record(txn->GetTransactionId(), txn->GetPrevLSN(), LogRecordType::ABORT);
+    auto lsn = log_manager_->AppendLogRecord(&log_record);
+    txn->SetPrevLSN(lsn);
   }
 
   // Release all the locks.

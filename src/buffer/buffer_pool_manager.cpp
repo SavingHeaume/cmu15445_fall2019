@@ -20,6 +20,7 @@
 #include <unordered_map>
 
 #include "common/config.h"
+#include "storage/page/page.h"
 
 namespace bustub {
 
@@ -91,6 +92,13 @@ auto BufferPoolManager::GetVictimFrameId() -> frame_id_t {
     return INVALID_PAGE_ID;
   }
 
+  if (enable_logging) {
+    Page &page = pages_[frame_id];
+    if (page.IsDirty() && page.GetLSN() > log_manager_->GetPersistentLSN()) {
+      log_manager_->Flush();
+    }
+  }
+
   return frame_id;
 }
 
@@ -149,7 +157,7 @@ Page *BufferPoolManager::NewPageImpl(page_id_t *page_id) {
   }
 
   // 3.   Update P's metadata, zero out memory and add P to the page table.
-  Page* page = &pages_[frame_id];
+  Page *page = &pages_[frame_id];
   if (page->IsDirty()) {
     disk_manager_->WritePage(page->page_id_, page->data_);
   }
@@ -157,11 +165,11 @@ Page *BufferPoolManager::NewPageImpl(page_id_t *page_id) {
   *page_id = disk_manager_->AllocatePage();
   page_table_.erase(page->GetPageId());
   page_table_[*page_id] = frame_id;
-  
+
   page->page_id_ = *page_id;
   page->pin_count_ = 1;
   page->is_dirty_ = false;
-  
+
   // 4.   Set the page ID output parameter. Return a pointer to P.
   return page;
 }
@@ -172,7 +180,7 @@ bool BufferPoolManager::DeletePageImpl(page_id_t page_id) {
   // 1.   Search the page table for the requested page (P).
   auto it_page = page_table_.find(page_id);
   // 1.   If P does not exist, return true.
-  if (it_page == page_table_.end()){
+  if (it_page == page_table_.end()) {
     return true;
   }
   // 2.   If P exists, but has a non-zero pin-count, return false. Someone is using the page.
